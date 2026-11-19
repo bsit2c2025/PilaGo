@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/common/StatusBadge';
-import { Bike, Users, Send, CheckCircle2, PauseCircle, PlayCircle, RefreshCw } from 'lucide-react';
+import QRScannerModal from '../components/common/QRScannerModal';
+import { Bike, Users, Send, CheckCircle2, PauseCircle, PlayCircle, RefreshCw, Camera, Check } from 'lucide-react';
 
 export default function DriverPortal() {
   const { user } = useAuth();
@@ -10,6 +11,8 @@ export default function DriverPortal() {
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanMessage, setScanMessage] = useState(null);
 
   useEffect(() => {
     fetchDriverState();
@@ -83,6 +86,24 @@ export default function DriverPortal() {
     }
   };
 
+  const handleTicketScan = async (scannedCode) => {
+    try {
+      const res = await api.post('/driver/verify-ticket/', { ticket_token: scannedCode });
+      setScanMessage({
+        type: 'success',
+        text: `✓ Passenger [${res.data.passenger.queue_number}] verified & marked as boarded! (₱${res.data.passenger.computed_fare.toFixed(2)})`
+      });
+      await fetchDriverState();
+      setTimeout(() => setScanMessage(null), 5000);
+    } catch (err) {
+      setScanMessage({
+        type: 'error',
+        text: err.response?.data?.error || 'Failed to verify ticket.'
+      });
+      setTimeout(() => setScanMessage(null), 5000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -130,17 +151,51 @@ export default function DriverPortal() {
             </div>
           </div>
 
+          {/* Scan Feedback Banner */}
+          {scanMessage && (
+            <div
+              className={`p-3.5 rounded-xl text-xs font-bold border flex items-center justify-between ${
+                scanMessage.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}
+            >
+              <span>{scanMessage.text}</span>
+              <button onClick={() => setScanMessage(null)} className="ml-2 text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+          )}
+
+          {/* Camera Scanner Trigger */}
+          <button
+            onClick={() => setScannerOpen(true)}
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-center transition shadow-sm"
+          >
+            <Camera className="w-4 h-4 mr-2 text-gold-500" />
+            Scan Passenger QR Pass (Camera / Manual Code)
+          </button>
+
           {/* Passenger Boarding List */}
           <div className="space-y-2.5">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block">
-              Boarded Passengers ({assignment.passengers?.length})
+              Passenger Manifest ({assignment.passengers?.filter(p => p.is_boarded).length}/{assignment.passengers?.length} Boarded)
             </span>
-            {assignment.passengers?.map((p, idx) => (
+            {assignment.passengers?.map((p) => (
               <div key={p.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs">
                 <div>
-                  <span className="font-extrabold text-brand-900 mr-2 tabular-nums">[{p.queue_number}]</span>
-                  <span className="font-semibold text-gray-800">{p.passenger_name}</span>
-                  <div className="text-gray-500 text-[11px] mt-0.5">{p.destination} ({p.distance_km} km)</div>
+                  <div className="flex items-center space-x-1.5 mb-1">
+                    <span className="font-extrabold text-brand-900 tabular-nums">[{p.queue_number}]</span>
+                    <span className="font-semibold text-gray-800">{p.passenger_name}</span>
+                    {p.is_boarded ? (
+                      <span className="inline-flex items-center text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full ml-1.5">
+                        <Check className="w-3 h-3 mr-0.5" /> Boarded
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full ml-1.5">
+                        Awaiting Scan
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-gray-500 text-[11px]">{p.destination} ({p.distance_km} km)</div>
                 </div>
                 <div className="text-right">
                   <span className="font-extrabold text-brand-900 tabular-nums">₱{p.computed_fare?.toFixed(2)}</span>
@@ -237,6 +292,14 @@ export default function DriverPortal() {
           )}
         </div>
       )}
+
+      {/* Camera QR Scanner Modal */}
+      <QRScannerModal
+        isOpen={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScanSuccess={handleTicketScan}
+        title="Verify Passenger QR Pass"
+      />
     </div>
   );
 }

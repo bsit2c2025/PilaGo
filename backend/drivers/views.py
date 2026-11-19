@@ -107,6 +107,8 @@ class DriverCurrentAssignmentView(APIView):
                 'distance_km': float(p.distance_km),
                 'computed_fare': float(p.computed_fare),
                 'is_discounted': p.is_discounted,
+                'is_boarded': p.is_boarded,
+                'ticket_qr_token': p.ticket_qr_token,
                 'status': p.status,
             })
 

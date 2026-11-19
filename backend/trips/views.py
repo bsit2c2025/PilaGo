@@ -205,3 +205,48 @@ class TripTicketDetailView(APIView):
             'joined_at': entry.joined_at,
             'called_at': entry.called_at,
         })
+
+class ValidateBoardingTicketView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        raw_token = request.data.get('ticket_token', '').strip()
+        if not raw_token:
+            return Response({'error': 'Ticket token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # If a full URL is scanned, extract token
+        token = raw_token.split('/')[-1].strip()
+
+        try:
+            entry = PassengerQueueEntry.objects.get(ticket_qr_token=token)
+        except PassengerQueueEntry.DoesNotExist:
+            return Response({'error': f'Invalid ticket token: {token}'}, status=status.HTTP_404_NOT_FOUND)
+
+        driver_profile = getattr(request.user, 'driver_profile', None)
+        if driver_profile:
+            dispatch = TripDispatch.objects.filter(driver=driver_profile, completed_at__isnull=True).first()
+            if not dispatch or not dispatch.passenger_entries.filter(id=entry.id).exists():
+                return Response({
+                    'error': f'Ticket {entry.queue_number} is not assigned to your active tricycle dispatch.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        was_already_boarded = entry.is_boarded
+        entry.is_boarded = True
+        if not entry.boarded_at:
+            entry.boarded_at = timezone.now()
+        entry.save()
+
+        return Response({
+            'success': True,
+            'message': 'Passenger verified and marked boarded!' if not was_already_boarded else 'Passenger was already verified.',
+            'was_already_boarded': was_already_boarded,
+            'passenger': {
+                'id': entry.id,
+                'queue_number': entry.queue_number,
+                'passenger_name': entry.user.get_full_name() or entry.user.username,
+                'destination': entry.destination.name,
+                'computed_fare': float(entry.computed_fare),
+                'is_discounted': entry.is_discounted,
+                'is_boarded': True,
+            }
+        })

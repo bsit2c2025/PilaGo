@@ -25,10 +25,10 @@ class PassengerQueueEntrySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'queue_number', 'terminal', 'terminal_name', 'destination', 'destination_name',
             'trip_type', 'party_size', 'status', 'distance_km', 'is_discounted',
-            'computed_fare', 'ticket_qr_token', 'people_ahead', 'assigned_tricycle',
+            'computed_fare', 'ticket_qr_token', 'is_boarded', 'boarded_at', 'people_ahead', 'assigned_tricycle',
             'joined_at', 'called_at'
         ]
-        read_only_fields = ['id', 'queue_number', 'status', 'distance_km', 'is_discounted', 'computed_fare', 'ticket_qr_token', 'joined_at', 'called_at']
+        read_only_fields = ['id', 'queue_number', 'status', 'distance_km', 'is_discounted', 'computed_fare', 'ticket_qr_token', 'is_boarded', 'boarded_at', 'joined_at', 'called_at']
 
     def get_people_ahead(self, obj):
         if obj.status == 'WAITING':

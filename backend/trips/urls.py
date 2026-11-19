@@ -6,6 +6,7 @@ from .views import (
     CancelQueueView,
     DriverManualDispatchView,
     TripTicketDetailView,
+    ValidateBoardingTicketView,
 )
 
 urlpatterns = [
@@ -14,5 +15,6 @@ urlpatterns = [
     path('queue/my-status/', MyQueueStatusView.as_view(), name='queue_my_status'),
     path('queue/<int:entry_id>/cancel/', CancelQueueView.as_view(), name='queue_cancel'),
     path('driver/dispatch-override/', DriverManualDispatchView.as_view(), name='driver_dispatch_override'),
+    path('driver/verify-ticket/', ValidateBoardingTicketView.as_view(), name='driver_verify_ticket'),
     path('trips/ticket/<str:token>/', TripTicketDetailView.as_view(), name='trip_ticket_detail'),
 ]

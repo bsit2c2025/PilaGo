@@ -29,6 +29,8 @@ class PassengerQueueEntry(models.Model):
     is_discounted = models.BooleanField(default=False)
     computed_fare = models.DecimalField(max_digits=6, decimal_places=2)
     ticket_qr_token = models.CharField(max_length=64, unique=True, blank=True)
+    is_boarded = models.BooleanField(default=False)
+    boarded_at = models.DateTimeField(null=True, blank=True)
     
     joined_at = models.DateTimeField(auto_now_add=True)
     called_at = models.DateTimeField(null=True, blank=True)

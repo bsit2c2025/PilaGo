@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
-import { Shield, MapPin, Bike, Users, Check, X, RefreshCw, Calculator } from 'lucide-react';
+import { Shield, MapPin, Bike, Users, Check, X, RefreshCw, Calculator, Camera } from 'lucide-react';
 import { StatusBadge } from '../components/common/StatusBadge';
+import QRScannerModal from '../components/common/QRScannerModal';
 
 export default function AdminPortal() {
   const [terminalCode, setTerminalCode] = useState('bayan-central');
   const [boardData, setBoardData] = useState(null);
   const [pendingDiscounts, setPendingDiscounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
 
   // Fare Simulator State
   const [simDist, setSimDist] = useState(3.5);
@@ -42,6 +45,19 @@ export default function AdminPortal() {
       setPendingDiscounts(pendingDiscounts.filter((d) => d.id !== userId));
     } catch (e) {
       alert('Action failed');
+    }
+  };
+
+  const handleAdminScan = async (code) => {
+    try {
+      const res = await api.post('/driver/verify-ticket/', { ticket_token: code });
+      setScanResult({
+        success: true,
+        data: res.data.passenger
+      });
+      fetchAdminData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Invalid ticket token');
     }
   };
 
@@ -87,16 +103,26 @@ export default function AdminPortal() {
           <p className="text-xs text-gray-500 mt-1">Live queue oversight, FIFO driver roster, and fare compliance.</p>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="text-xs font-semibold text-gray-500">Terminal:</span>
-          <select
-            value={terminalCode}
-            onChange={(e) => setTerminalCode(e.target.value)}
-            className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setScannerOpen(true)}
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
           >
-            <option value="bayan-central">Bayan Central Terminal</option>
-            <option value="north-junction">North Highway Junction</option>
-          </select>
+            <Camera className="w-3.5 h-3.5 text-gold-500" />
+            <span>Scan Ticket QR</span>
+          </button>
+
+          <div className="flex items-center space-x-2 border-l border-gray-200 pl-3">
+            <span className="text-xs font-semibold text-gray-500">Terminal:</span>
+            <select
+              value={terminalCode}
+              onChange={(e) => setTerminalCode(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="bayan-central">Bayan Central Terminal</option>
+              <option value="north-junction">North Highway Junction</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -349,6 +375,29 @@ export default function AdminPortal() {
           </div>
         </div>
       </div>
+
+      {/* QR Scanner Modal (Admin) */}
+      <QRScannerModal
+        isOpen={scannerOpen}
+        onClose={() => { setScannerOpen(false); setScanResult(null); }}
+        onScanSuccess={handleAdminScan}
+        title="Admin Ticket Inspection"
+      />
+
+      {/* Scan Result Banner */}
+      {scanResult && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 flex items-center justify-between shadow-subtle text-xs">
+          <div>
+            <span className="font-extrabold text-sm block mb-0.5">✓ Ticket Verified — [{scanResult.data.queue_number}]</span>
+            <span className="text-emerald-700">
+              {scanResult.data.passenger_name} · {scanResult.data.destination} · 
+              Fare: <strong>₱{scanResult.data.computed_fare?.toFixed(2)}</strong>
+              {scanResult.data.is_discounted && ' (20% Discount Applied)'}
+            </span>
+          </div>
+          <button onClick={() => setScanResult(null)} className="ml-4 text-emerald-500 hover:text-emerald-700 font-bold text-base">✕</button>
+        </div>
+      )}
     </div>
   );
 }
