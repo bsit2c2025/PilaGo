@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { QueueNumberBadge, StatusBadge } from '../components/common/StatusBadge';
@@ -8,6 +9,9 @@ import { MapPin, Users, Bike, QrCode, AlertCircle, RefreshCw } from 'lucide-reac
 
 export default function PassengerPortal() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const terminalParam = searchParams.get('terminal');
+
   const [terminals, setTerminals] = useState([]);
   const [selectedTerminal, setSelectedTerminal] = useState('');
   const [destinations, setDestinations] = useState([]);
@@ -41,10 +45,19 @@ export default function PassengerPortal() {
       ]);
       setTerminals(termRes.data);
       if (termRes.data.length > 0) {
-        setSelectedTerminal(termRes.data[0].id);
-        setDestinations(termRes.data[0].destinations || []);
-        if (termRes.data[0].destinations?.length > 0) {
-          setSelectedDestination(termRes.data[0].destinations[0].id);
+        // Check if query param specifies terminal by code or id
+        let target = termRes.data[0];
+        if (terminalParam) {
+          const match = termRes.data.find(
+            (t) => t.code === terminalParam || String(t.id) === terminalParam
+          );
+          if (match) target = match;
+        }
+
+        setSelectedTerminal(target.id);
+        setDestinations(target.destinations || []);
+        if (target.destinations?.length > 0) {
+          setSelectedDestination(target.destinations[0].id);
         }
       }
       if (statusRes.data.has_active_queue) {

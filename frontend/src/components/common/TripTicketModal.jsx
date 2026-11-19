@@ -28,12 +28,19 @@ export default function TripTicketModal({ isOpen, onClose, ticketData }) {
         {/* QR Code Container */}
         <div className="bg-brand-50 p-4 rounded-xl flex flex-col items-center justify-center mb-5 border border-brand-100">
           <QRCodeSVG
-            value={`https://pilago.ph/verify/${ticketData.ticket_token || ticketData.ticket_qr_token}`}
+            value={`${window.location.origin}/verify/${ticketData.ticket_token || ticketData.ticket_qr_token}`}
             size={160}
             level="M"
             className="rounded-lg shadow-sm bg-white p-2"
           />
-          <span className="text-[11px] text-brand-700 font-semibold mt-2.5">Show this to tricycle driver or dispatcher</span>
+          <a
+            href={`/verify/${ticketData.ticket_token || ticketData.ticket_qr_token}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[11px] text-brand-700 hover:text-brand-900 font-semibold mt-2.5 underline"
+          >
+            Open Verification Page ↗
+          </a>
         </div>
 
         {/* Details Table */}

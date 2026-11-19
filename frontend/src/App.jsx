@@ -8,6 +8,7 @@ import PassengerPortal from './pages/PassengerPortal';
 import DriverPortal from './pages/DriverPortal';
 import AdminPortal from './pages/AdminPortal';
 import PublicTerminalBoard from './pages/PublicTerminalBoard';
+import TicketVerification from './pages/TicketVerification';
 
 function Layout() {
   const location = useLocation();
@@ -24,6 +25,8 @@ function Layout() {
           <Route path="/driver" element={<DriverPortal />} />
           <Route path="/admin" element={<AdminPortal />} />
           <Route path="/board/:terminalCode?" element={<PublicTerminalBoard />} />
+          <Route path="/ticket/:token" element={<TicketVerification />} />
+          <Route path="/verify/:token" element={<TicketVerification />} />
         </Routes>
       </main>
     </div>
